@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>用户列表管理</title>
+  <style>
+    body { font-family: 'Microsoft YaHei', sans-serif; background: #f5f5f5; margin: 0; padding: 20px; }
+    h1 { text-align: center; color: #333; margin-bottom: 20px; }
+    .container { width: 80%; margin: 0 auto; }
+    .toolbar { text-align: right; margin-bottom: 10px; }
+    .toolbar a { color: #1890ff; text-decoration: none; font-size: 14px; }
+    table { margin: 0 auto; border-collapse: collapse; width: 100%; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    th, td { border: 1px solid #e0e0e0; padding: 12px; text-align: center; }
+    th { background: #1890ff; color: #fff; font-weight: 600; }
+    tr:hover { background: #f0f7ff; }
+    .btn { padding: 4px 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; margin: 0 2px; }
+    .btn-del { background: #ff4d4f; color: #fff; }
+    .btn:hover { opacity: 0.8; }
+    .tag-admin { background: #e6f7ff; color: #1890ff; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+    .tag-user { background: #f5f5f5; color: #666; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+    .status-on { color: #52c41a; }
+    .status-off { color: #ff4d4f; }
+    .link-edit { color: #1890ff; text-decoration: none; margin-right: 8px; }
+    .pagination { margin-top: 20px; text-align: center; padding: 15px; background: #fff; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    .pagination button { padding: 6px 16px; border: 1px solid #d9d9d9; background: #fff; border-radius: 4px; cursor: pointer; margin: 0 4px; }
+    .pagination button:hover { border-color: #1890ff; color: #1890ff; }
+    .pagination button:disabled { color: #ccc; cursor: not-allowed; border-color: #d9d9d9; }
+    .pagination select { padding: 5px 10px; border: 1px solid #d9d9d9; border-radius: 4px; margin-left: 15px; }
+    .page-info { color: #666; margin: 0 15px; }
+  </style>
+</head>
+
+<script src="./js/vue.js"></script>
+<script src="./js/axios-0.18.0.js"></script>
+
+<body>
+  <h1>用户列表管理</h1>
+  
+  <div id="app" class="container">
+    <div class="toolbar">
+      <a href="user_add.html">+ 新增用户</a>
+    </div>
+    
+    <table>
+      <tr>
+        <th>ID</th>
+        <th>用户名</th>
+        <th>邮箱</th>
+        <th>电话</th>
+        <th>角色</th>
+        <th>状态</th>
+        <th>创建时间</th>
+        <th>操作</th>
+      </tr>
+      <tr align="center" v-for="user in tableData">
+        <td>{{user.id}}</td>
+        <td>{{user.username}}</td>
+        <td>{{user.email}}</td>
+        <td>{{user.phone}}</td>
+        <td>
+          <span :class="user.role === 'admin' ? 'tag-admin' : 'tag-user'">
+            {{user.role === 'admin' ? '管理员' : '普通用户'}}
+          </span>
+        </td>
+        <td :class="user.status === 1 ? 'status-on' : 'status-off'">
+          {{user.status === 1 ? '启用' : '禁用'}}
+        </td>
+        <td>{{user.createdAt ? user.createdAt.replace('T', ' ') : ''}}</td>
+        <td>
+          <a class="link-edit" :href="'user_edit.html?id=' + user.id">修改</a>
+          <button class="btn btn-del" @click="deleteUser(user.id)">删除</button>
+        </td>
+      </tr>
+    </table>
+
+    <!-- 分页组件 -->
+    <div class="pagination">
+      <button @click="changePage(pageNum - 1)" :disabled="pageNum <= 1">上一页</button>
+      <span class="page-info">第 {{pageNum}} 页 / 共 {{totalPages}} 页（共 {{total}} 条）</span>
+      <button @click="changePage(pageNum + 1)" :disabled="pageNum >= totalPages">下一页</button>
+      <select v-model="pageSize" @change="changePageSize">
+        <option value="5">5条/页</option>
+        <option value="10">10条/页</option>
+        <option value="15">15条/页</option>
+      </select>
+    </div>
+  </div>
+</body>
+
+<script>
+  new Vue({
+    el: "#app",
+    data() {
+      return {
+        tableData: [],
+        pageNum: 1,
+        pageSize: 5,
+        total: 0,
+        totalPages: 0
+      }
+    },
+    methods: {
+      loadData() {
+        axios.get(`/api/users/page/${this.pageNum}/${this.pageSize}`)
+          .then(res => {
+            if(res.data.code === 1){
+              this.tableData = res.data.data.rows;
+              this.total = res.data.data.total;
+              this.totalPages = Math.ceil(this.total / this.pageSize);
+            }
+          });
+      },
+      changePage(page) {
+        if(page < 1 || page > this.totalPages) return;
+        this.pageNum = page;
+        this.loadData();
+      },
+      changePageSize() {
+        this.pageNum = 1;
+        this.loadData();
+      },
+      deleteUser(id) {
+        if(confirm("确定要删除该用户吗？")) {
+          axios.delete('/api/users/' + id)
+            .then(res => {
+              alert("删除成功");
+              this.loadData();
+            });
+        }
+      }
+    },
+    created() {
+      this.loadData();
+    }
+  });
+</script>
+</html>
