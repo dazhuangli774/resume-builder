@@ -16,6 +16,8 @@ export const users = mysqlTable("users", {
   email: varchar("email", { length: 320 }),
   avatar: text("avatar"),
   purpose: varchar("purpose", { length: 20 }),
+  // 本地用户名口令登录用；Kimi OAuth 建的用户该字段为空
+  password: varchar("password", { length: 255 }),
   role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt")

@@ -122,7 +122,7 @@ function HeroSection() {
             </h1>
 
             <p className="text-lg md:text-xl text-white/95 font-light leading-relaxed mb-6 max-w-lg drop-shadow-[0_4px_12px_rgba(0,0,0,0.25)]">
-              基于 <span className="font-semibold text-white">React 18 + Spring Boot 3</span> 全栈架构，融合 AI 智能润色引擎与多维度模板系统。
+              基于 <span className="font-semibold text-white">React 18 + Hono + Drizzle</span> 全栈架构，融合 AI 智能润色引擎与多维度模板系统。
             </p>
             <p className="text-base text-white/80 leading-relaxed mb-12 max-w-lg drop-shadow-[0_2px_8px_rgba(0,0,0,0.2)]">
               三步生成：选择模板 → 智能填充 → 一键导出。所见即所得的编辑体验，让每一份简历都精准匹配目标场景。
@@ -312,7 +312,7 @@ function TechStackSection() {
 
   const stacks = [
     { icon: Code2, color: "#0071e3", bg: "#eef2ff", title: "React 18", desc: "函数组件 + Hooks + TypeScript + Vite" },
-    { icon: Server, color: "#34c759", bg: "#ecfdf5", title: "Spring Boot 3", desc: "RESTful API + 三层架构解耦" },
+    { icon: Server, color: "#34c759", bg: "#ecfdf5", title: "Hono + Drizzle", desc: "tRPC 风格 API + Drizzle ORM" },
     { icon: Database, color: "#f5a623", bg: "#fffbeb", title: "MySQL", desc: "关系型数据库 + MyBatis ORM" },
     { icon: Lock, color: "#5e5ce6", bg: "#f5f3ff", title: "权限控制", desc: "Session + JWT 双认证机制" },
     { icon: Cpu, color: "#bf5af2", bg: "#fdf2f8", title: "Vue 3", desc: "Composition API + 响应式绑定" },
@@ -1344,7 +1344,7 @@ function Footer() {
               <span className="text-xl font-bold text-amber-800">让每一份简历都闪闪发光</span>
             </div>
             <p className="text-amber-800/50 text-sm leading-relaxed max-w-sm">
-              基于 React 18 + Spring Boot 3 全栈架构，融合 AI 智能润色引擎与多维度模板系统，助力每一位求职者打造高质量简历。
+              基于 React 18 + Hono + Drizzle 全栈架构，融合 AI 智能润色引擎与多维度模板系统，助力每一位求职者打造高质量简历。
             </p>
           </div>
           <div>

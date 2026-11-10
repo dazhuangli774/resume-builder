@@ -9,11 +9,15 @@ import { env } from "./lib/env";
 import { createOAuthCallbackHandler } from "./kimi/auth";
 import { Paths } from "@contracts/constants";
 import aiRouter from "./ai-router";  // ← 加上这一行
+import { authLocal } from "./auth-local";
 
 const app = new Hono<{ Bindings: HttpBindings }>();
 
 app.use(bodyLimit({ maxSize: 50 * 1024 * 1024 }));
 app.get(Paths.oauthCallback, createOAuthCallbackHandler());
+
+// 本地用户名 + 口令登录（/api/auth/login、/api/auth/register、/api/auth/me）
+app.route("/api/auth", authLocal);
 
 // 挂载 AI 润色路由 — 加在这一行
 app.route("/api/ai", aiRouter);

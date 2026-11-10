@@ -1,109 +1,123 @@
-# 简历生成系统（多个实现）
+# 简历生成系统（Resume Builder）
 
-「在线简历生成」课程设计的完整代码集合。同一个题目前后做了**三套实现**，外加一个独立的登录/用户管理服务，全部收在本仓库里，方便对照各阶段的技术选型与完成度。
+在线简历生成系统：选模板 → 填表 → 实时预览 → 保存 / 导出 PDF，覆盖「求职 / 升学」两种场景，并接入 AI 润色、求职信生成。
+
+本仓库把同一门课程设计前后 **三套实现 + 一个独立登录服务** 收在一起，方便对照各阶段的技术选型。
 
 | 子目录 | 技术栈 | 定位 | 状态 |
 |---|---|---|---|
-| [`backend-spring/`](backend-spring) | Java 17 · Spring Boot 3.5 · MyBatis · JWT · MySQL | 主实现的后端（简历 CRUD、模板、AI） | ✅ 编译通过（`mvn package`），需 MySQL |
-| [`frontend-vue/`](frontend-vue) | Vue 2.6 · Element UI · Axios | 主实现的前端（7 个页面） | ⚠️ 未在本环境安装依赖验证 |
-| [`login-service/`](login-service) | Java 17 · Spring Boot 3.2 · MyBatis · PageHelper | 独立的登录 / 用户管理服务（含后台用户列表、增删改静态页） | ⚠️ 独立可编译，库名与主实现不同 |
-| [`app-ts/`](app-ts) | TypeScript · Hono · React 18 · Vite · Drizzle ORM · MySQL · Kimi 开放平台 | 全栈重写版：9 个页面、简历/模板/AI/管理员四组路由、Kimi OAuth 登录与简历润色 | ⚠️ 需自备 `.env`（见下），未在本环境验证构建 |
-| [`sql/`](sql) | — | 主实现（`backend-spring`）的建库建表脚本 | ✅ |
+| **[`app-ts/`](app-ts)** | React 18 · Vite · TypeScript · Hono · tRPC · Drizzle ORM · MySQL · Tailwind + shadcn | **主实现（最终版）**：落地页、模板中心（80 套模板）、编辑器、我的简历、仪表盘、管理员、AI 助手 | ✅ 本地跑通（登录 → 编辑器 → 保存） |
+| [`backend-spring/`](backend-spring) | Java 17 · Spring Boot 3.5 · MyBatis · JWT · MySQL | 另一版后端：简历 CRUD、模板、AI 接口 | ✅ `mvn package` 通过，需 MySQL |
+| [`frontend-vue/`](frontend-vue) | Vue 2.6 · Element UI · Axios | 早期版本前端（路由与首页脚本未补全，**残缺**） | ⚠️ 能启动，页面不完整 |
+| [`login-service/`](login-service) | Java 17 · Spring Boot 3.2 · MyBatis · PageHelper | 更早期的登录 / 用户管理服务（含后台用户列表静态页） | ⚠️ 独立项目，库名 `resume_db` |
+| [`sql/`](sql) | — | `backend-spring` 的建库建表脚本；`app-ts` 的最小迁移 | ✅ |
+
+## 主实现界面（`app-ts`，实际运行截图）
+
+![落地页](docs/images/app-home.png)
+
+| 模板中心（80 套 / 7 风格 / 3 场景） | 简历编辑器 |
+|---|---|
+| ![](docs/images/app-templates.png) | ![](docs/images/app-editor.png) |
+
+| 仪表盘 | 我的简历 |
+|---|---|
+| ![](docs/images/app-dashboard.png) | ![](docs/images/app-my-resumes.png) |
 
 ---
 
-## 三套实现的关系
+## 1. app-ts（主实现）
 
-```
-第一阶段  login-service        用户登录/注册 + 后台用户管理（Spring Boot 3.2，页面是原生 HTML + Vue2 CDN）
-              ↓
-第二阶段  backend-spring       简历业务后端（Spring Boot 3.5 + MyBatis + JWT）
-          frontend-vue         配套前端（Vue CLI + Element UI）
-              ↓
-第三阶段  app-ts               全栈重写（Hono + React + Drizzle），补齐模板、AI、管理员与 Kimi 登录
-```
+**技术栈**：React 18 + TypeScript + Vite 7、Hono + tRPC 风格 API、Drizzle ORM、MySQL 8 / MariaDB 10.4、Tailwind + shadcn/ui、Kimi 开放平台（OAuth + 文本生成）。
 
-三套的数据库名不一致：`backend-spring` 用 `resume`，`login-service` 用 `resume_db`，`app-ts` 由 `DATABASE_URL` 决定。这是分阶段迭代的痕迹，**不是**同一套系统可以混跑。
+**页面**：`/` 落地页、`/templates` 模板中心、`/editor` 编辑器、`/my-resumes` 我的简历、`/dashboard` 仪表盘、`/admin/users` 用户管理、`/peots` 管理、`/login` 登录。
 
----
-
-## 1. backend-spring（主实现后端）
-
-```bash
-mysql -uroot -p < sql/schema.sql          # 建库建表 + 3 套初始模板
-
-cd backend-spring
-export DB_PASSWORD=你的口令                # 默认空
-export DEEPSEEK_API_KEY=sk-xxxx           # 可选，不配则 AI 返回占位文案
-mvn spring-boot:run                       # http://localhost:8080
-```
-
-接口（统一前缀 `/api`）：
-
-| 方法 | 路径 | 说明 |
-|---|---|---|
-| POST | `/api/user/register`、`/api/user/login` | 注册 / 登录（返回 JWT） |
-| GET/POST/PUT/DELETE | `/api/resume`、`/api/resume/{id}`、`/api/resume/list` | 简历 CRUD |
-| GET | `/api/template/list`、`/api/template/{id}` | 模板 |
-| POST | `/api/ai/summary`、`/api/ai/polish`、`/api/ai/cover-letter` | AI 生成简介 / 润色 / 求职信 |
-
-AI 实现说明：`utils/DeepSeekUtil` 调用 DeepSeek `chat/completions`（JDK 自带 `java.net.http`，无额外 SDK）；**未配置 `DEEPSEEK_API_KEY` 时自动降级为占位文案**，保证不配密钥也能跑通界面。
-
-## 2. frontend-vue（主实现前端）
-
-```bash
-cd frontend-vue
-npm install
-npm run serve      # http://localhost:8081，/api 已代理到 :8080
-```
-
-页面：Home / Templates / Editor（求职·升学两套表单）/ Login / Register / UserGuide / About。
-
-## 3. login-service（登录与用户管理）
-
-```bash
-cd login-service
-mvn spring-boot:run     # http://localhost:8080，静态页 /user_list.html
-```
-
-- 库名 `resume_db`，账号口令见 `src/main/resources/application.yml`
-- 静态页 `user_list.html` / `user_add.html` / `user_edit.html` 通过 CDN 本地文件（`static/js/vue.js`、`axios-0.18.0.js`）驱动
-- `application.yml` 里配置了 `mybatis.mapper-locations=classpath:mapper/*.xml`，但仓库中没有对应 XML（实际使用注解式 Mapper），该配置可删
-
-## 4. app-ts（全栈重写版）
+### 启动
 
 ```bash
 cd app-ts
-cp .env.example .env      # 填入下面的变量
+cp .env.example .env          # 填 DATABASE_URL、APP_SECRET 等
+
 npm install
-npm run db:push           # 建表（Drizzle）
-npm run dev               # 前端 + API 一起起
+npm run db:push               # 按 db/schema.ts 建表（Drizzle）
+
+# 已有库（旧版）需要补口令字段：
+# mysql -uroot resume_db < ../sql/app-ts-add-password.sql
+
+npm run dev                   # http://localhost:3000
 ```
 
-`.env` 必填项（`.env.example` 有完整注释）：
+首次使用在 `/login` 页面点「注册」创建账号（用户名 ≥2 位、口令 ≥6 位），或用接口：
 
-```
-APP_ID / APP_SECRET           # Kimi 开放平台应用凭据
-DATABASE_URL                  # MySQL 连接串
-KIMI_API_KEY                  # Kimi 平台密钥
-VITE_KIMI_AUTH_URL / VITE_APP_ID
-OWNER_UNION_ID                # 首个登录者的 unionId，用于授予 admin
+```bash
+curl -X POST http://localhost:3000/api/auth/register \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"demo","email":"demo@example.com","password":"123456"}'
 ```
 
-> ⚠️ 原工程的 `.env` 内含真实密钥，**已从仓库移除**，只保留 `.env.example`。请自行申请凭据。
+### 登录方式
 
-页面：Home、Editor、Templates、MyResumes、Dashboard、AdminUsers、PeotManager、Login。
+| 方式 | 说明 |
+|---|---|
+| 本地用户名 + 口令 | `POST /api/auth/login`、`/api/auth/register`、`/api/auth/me`。口令用 `node:crypto` 的 scrypt 加盐哈希存 `users.password`，`unionId` 记为 `local:<username>` |
+| Kimi OAuth | 原有链路保留（`/api/oauth/callback`）。需要能访问 `KIMI_AUTH_URL` 的授权服务 |
+
+两种方式签发的都是同一个会话 cookie（`kimi_sid`，JWT/HS256，密钥为 `APP_SECRET`），所以 `/api/trpc/*` 的鉴权链路完全复用。
+
+### 数据
+
+- 模板、简历、用户、分类、教育、技能等表由 `db/schema.ts` 定义，`npm run db:push` 自动建。
+- `db/seed.ts`、`db/seed-peots.ts` 提供种子数据脚本。
+
+---
+
+## 2. backend-spring（另一版后端）
+
+```bash
+mysql -uroot -p < sql/schema.sql        # 建库 + 3 套初始模板
+
+cd backend-spring
+export DB_PASSWORD=你的口令              # 默认空
+export DEEPSEEK_API_KEY=sk-xxxx         # 可选，不配则 AI 返回占位文案
+mvn spring-boot:run                     # http://localhost:8080
+```
+
+接口（前缀 `/api`）：`/user/register`、`/user/login`、`/resume`（CRUD）、`/template/list`、`/ai/summary|polish|cover-letter`。
+
+AI 由 `utils/DeepSeekUtil` 调用 DeepSeek `chat/completions`（JDK 自带 `java.net.http`，无额外 SDK）；**未配置 `DEEPSEEK_API_KEY` 时降级为占位文案**。
+
+## 3. frontend-vue（早期版本，残缺）
+
+```bash
+cd frontend-vue
+npm install && npm run serve      # http://localhost:8081，/api 代理到 :8080
+```
+
+⚠️ `src/router/index.js` 只注册了 4 个路由（登录/注册/编辑器被注释掉），`Home.vue` 的 `<script>` 是占位注释，`Templates.vue` 用了后端不存在的 `tags` 字段。**能启动但页面是空壳**，保留仅供对照。
+
+## 4. login-service（更早期的登录模块）
+
+```bash
+cd login-service
+mvn spring-boot:run        # http://localhost:8080，静态页 /user_list.html
+```
+
+库名 `resume_db`；`application.yml` 里 `mybatis.mapper-locations` 指向不存在的 XML（实际用注解 Mapper），该配置可删。
 
 ---
 
 ## 已知问题
 
-1. **口令为明文存储**（`backend-spring`），生产必须改 BCrypt；`JwtUtil` 的密钥已支持 `JWT_SECRET` 环境变量。
-2. `backend-spring` 的 `JwtInterceptor` 存在但未在 `WebConfig` 注册，目前只有显式带 `Authorization` 头的接口会校验。
-3. `frontend-vue` 的部分字段（`jobTarget`、`salary`）与后端 `resume` 表字段未对齐，保存会丢字段。
-4. 三个实现的数据库名与表结构并不统一，不能混跑。
-5. `app-ts`、`frontend-vue` 在本机未跑通构建（网络/环境限制），提交的是源码。
-6. 没有单元测试与接口测试。
+1. **`app-ts` 的落地页文案**：原写「React 18 + Spring Boot 3 全栈架构」，但实际后端是 Hono + Drizzle，已改为真实架构。
+2. `backend-spring` 口令明文存储，生产需改 BCrypt；`JwtUtil` 密钥已支持 `JWT_SECRET` 环境变量。
+3. `backend-spring` 的 `JwtInterceptor` 存在但未在 `WebConfig` 注册，只有显式带 `Authorization` 头的接口会校验。
+4. 三套实现的数据库名不统一（`resume` / `resume_db`），不能混跑。
+5. `frontend-vue` 与 `login-service` 为早期版本，未做完整联调。
+6. 没有单元测试。
+
+## 安全提示
+
+`.env` 内含 Kimi 开放平台的 `APP_SECRET`、`KIMI_API_KEY` 与数据库连接串，**已在 `.gitignore` 中排除，仓库只保留 `.env.example`**。请勿把真实密钥提交到仓库。
 
 ## License
 

@@ -74,6 +74,13 @@
             <version>3.0.5</version>
             <scope>test</scope>
         </dependency>
+        <!-- 本地演示：无 MySQL 时用内嵌 H2 启动 -->
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
     </dependencies>
 
     <build>
